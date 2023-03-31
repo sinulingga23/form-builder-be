@@ -5,7 +5,7 @@ Form Builder Backend
 docker build -f Dockerfile -t github.com/sinulingga23/form-builder-be .
 ```
 
-# Run Containe from an Image
+# Run Container from an Image
 ```
 docker run --name form-builder-be github.com/sinulingga23/form-builder-be
 ```
