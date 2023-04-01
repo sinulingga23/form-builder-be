@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/sinulingga23/form-builder-be/api/repository"
 	"github.com/sinulingga23/form-builder-be/api/usecase"
 	"github.com/sinulingga23/form-builder-be/define"
 	"github.com/sinulingga23/form-builder-be/model"
@@ -18,11 +19,15 @@ import (
 )
 
 type mFormUsecase struct {
-	db *sql.DB
+	db                 *sql.DB
+	mPartnerRepository repository.IMPartnerRepository
 }
 
-func NewMFormUsecase(db *sql.DB) usecase.IMFormUsecase {
-	return &mFormUsecase{db: db}
+func NewMFormUsecase(
+	db *sql.DB,
+	mPartnerRepositoru repository.IMPartnerRepository,
+) usecase.IMFormUsecase {
+	return &mFormUsecase{db: db, mPartnerRepository: mPartnerRepositoru}
 }
 
 func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest payload.CreateMFormRequest) payload.Response {
@@ -75,6 +80,27 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		mFieldTypeIds = append(mFieldTypeIds, mFormField.MFieldTypeId)
 	}
 
+	// check m_parther by mPartnerId, ensure it's exists
+	isMPartnerExists, errIsExistsById := usecase.mPartnerRepository.IsExistById(ctx, createMFormRequest.MPartnerId)
+	if errIsExistsById != nil {
+		log.Printf("errIsExistsById ")
+		if errors.Is(errIsExistsById, sql.ErrNoRows) {
+			response.StatusCode = http.StatusNotFound
+			response.Message = define.ErrMPartnerNotFound.Error()
+			return response
+		}
+
+		response.StatusCode = http.StatusInternalServerError
+		response.Message = define.ErrInternalServerError.Error()
+		return response
+	}
+
+	if !isMPartnerExists {
+		response.StatusCode = http.StatusNotFound
+		response.Message = define.ErrMPartnerNotFound.Error()
+		return response
+	}
+
 	tx, errBegin := usecase.db.Begin()
 	if errBegin != nil {
 		if errRollback := tx.Rollback(); errRollback != nil {
@@ -82,58 +108,6 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		}
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrInternalServerError.Error()
-		return response
-	}
-
-	// check m_parther by mPartnerId, ensure it's exists
-	queryCheckMPartner := `
-	select
-		count(id)
-	from
-		partner.m_partner
-	where
-		id = $1
-	`
-	rowCheckMPartner := tx.QueryRow(queryCheckMPartner, createMFormRequest.MPartnerId)
-	countCheckMPartner := 0
-	errRowCheckMpartner := rowCheckMPartner.Scan(&countCheckMPartner)
-	if errRowCheckMpartner != nil {
-		log.Printf("errRowCheckMpartner: %v", errRowCheckMpartner)
-		if errRollback := tx.Rollback(); errRollback != nil {
-			log.Printf("errRollback: %v", errRollback)
-			response.StatusCode = http.StatusInternalServerError
-			response.Message = define.ErrInternalServerError.Error()
-			return response
-		}
-
-		if errors.Is(errRowCheckMpartner, sql.ErrNoRows) {
-			response.StatusCode = http.StatusNotFound
-			response.Message = define.ErrMPartnerNotFound.Error()
-			return response
-		}
-
-		response.StatusCode = http.StatusInternalServerError
-		response.Message = define.ErrQueryData.Error()
-		return response
-	}
-
-	if lastErrRowCheckMPartner := rowCheckMPartner.Err(); lastErrRowCheckMPartner != nil {
-		log.Printf("lastErrRowCheckMPartner: %v", lastErrRowCheckMPartner)
-		if errRollback := tx.Rollback(); errRollback != nil {
-			log.Printf("errRollback: %v", errRollback)
-			response.StatusCode = http.StatusInternalServerError
-			response.Message = define.ErrInternalServerError.Error()
-			return response
-		}
-
-		response.StatusCode = http.StatusInternalServerError
-		response.Message = define.ErrQueryData.Error()
-		return response
-	}
-
-	if countCheckMPartner != 1 {
-		response.StatusCode = http.StatusNotFound
-		response.Message = define.ErrMPartnerNotFound.Error()
 		return response
 	}
 
