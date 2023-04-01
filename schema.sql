@@ -34,7 +34,6 @@ create table partner.m_form_field (
     m_form_id uuid not null,
     m_form_type_id uuid not null,
     is_mandatory boolean null,
-    is_should_answered boolean null,
     ordering integer not null,
     placeholder varchar(150) not null,
     created_at timestamp not null default current_timestamp,
@@ -58,9 +57,9 @@ create table partner.m_form_field_childs (
 create table partner.m_form_field_answer (
     id uuid not null primary key,
     name varchar(150) not null,
-    m_form_field_childs_id uuid not null,
+    m_form_field_id uuid not null,
     created_at timestamp not null default current_timestamp,
     updated_at timestamp null,
-    foreign key (m_form_field_childs_id) references partner.m_form_field_childs (id)
+    foreign key (m_form_field_id) references partner.m_form_field (id)
     on update cascade on delete restrict
 );

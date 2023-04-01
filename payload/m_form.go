@@ -12,6 +12,7 @@ type (
 		MFormFieldName        string `json:"mFormFieldName"`
 		MFormFieldIsMandatory bool   `json:"mFormFieldIsMandatory"`
 		MFormFieldOrdering    int    `json:"mFormFieldOrdering"`
+		MFormFieldPlaceholder string `json:"mFormFieldPlaceholder"`
 		MFormFieldChilds      []MFormFieldChild
 	}
 
