@@ -12,4 +12,5 @@ var (
 	ErrInternalServerError = errors.New("Internal Server Error.")
 	ErrQueryData           = errors.New("Error query dtata.")
 	ErrMFormFieldsEmpty    = errors.New("Form Fields can't empty.")
+	ErrFailedBind          = errors.New("Bad Request")
 )
