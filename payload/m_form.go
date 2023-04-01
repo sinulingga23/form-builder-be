@@ -8,12 +8,12 @@ type (
 	}
 
 	MFormField struct {
-		MFieldTypeId          string `json:"mFieldTypeId"`
-		MFormFieldName        string `json:"mFormFieldName"`
-		MFormFieldIsMandatory bool   `json:"mFormFieldIsMandatory"`
-		MFormFieldOrdering    int    `json:"mFormFieldOrdering"`
-		MFormFieldPlaceholder string `json:"mFormFieldPlaceholder"`
-		MFormFieldChilds      []MFormFieldChild
+		MFieldTypeId          string            `json:"mFieldTypeId"`
+		MFormFieldName        string            `json:"mFormFieldName"`
+		MFormFieldIsMandatory bool              `json:"mFormFieldIsMandatory"`
+		MFormFieldOrdering    int               `json:"mFormFieldOrdering"`
+		MFormFieldPlaceholder string            `json:"mFormFieldPlaceholder"`
+		MFormFieldChilds      []MFormFieldChild `json:"mFormFieldChilds"`
 	}
 
 	MFormFieldChild struct {

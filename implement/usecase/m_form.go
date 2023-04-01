@@ -78,10 +78,10 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	tx, errBegin := usecase.db.Begin()
 	if errBegin != nil {
 		if errRollback := tx.Rollback(); errRollback != nil {
-			response.StatusCode = http.StatusInternalServerError
-			return response
+			log.Printf("errRollback: %v", errRollback)
 		}
 		response.StatusCode = http.StatusInternalServerError
+		response.Message = define.ErrInternalServerError.Error()
 		return response
 	}
 
@@ -100,6 +100,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	if errRowCheckMpartner != nil {
 		log.Printf("errRowCheckMpartner: %v", errRowCheckMpartner)
 		if errRollback := tx.Rollback(); errRollback != nil {
+			log.Printf("errRollback: %v", errRollback)
 			response.StatusCode = http.StatusInternalServerError
 			response.Message = define.ErrInternalServerError.Error()
 			return response
@@ -119,6 +120,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	if lastErrRowCheckMPartner := rowCheckMPartner.Err(); lastErrRowCheckMPartner != nil {
 		log.Printf("lastErrRowCheckMPartner: %v", lastErrRowCheckMPartner)
 		if errRollback := tx.Rollback(); errRollback != nil {
+			log.Printf("errRollback: %v", errRollback)
 			response.StatusCode = http.StatusInternalServerError
 			response.Message = define.ErrInternalServerError.Error()
 			return response
@@ -256,6 +258,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	if errInsertMForm != nil {
 		log.Printf("errInsertMForm: %v", errInsertMForm)
 		if errRollback := tx.Rollback(); errRollback != nil {
+			log.Printf("errRollback: %v", errRollback)
 			response.StatusCode = http.StatusInternalServerError
 			response.Message = define.ErrInternalServerError.Error()
 			return response
@@ -268,6 +271,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 
 	paramInsertListMFormField := ``
 	mapMFormFieldIdWithMFieldType := make(map[string]string)
+	mapMFromFieldIdWithChilds := make(map[string][]payload.MFormFieldChild)
 	lenMFormFields := len(createMFormRequest.MFormFields)
 	for i := 0; i < lenMFormFields; i++ {
 		mFormFieldId := uuid.NewString()
@@ -295,6 +299,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		}
 
 		mapMFormFieldIdWithMFieldType[mFormFieldId] = mFormField.MFieldTypeId
+		mapMFromFieldIdWithChilds[mFormFieldId] = mFormField.MFormFieldChilds
 	}
 	queryInsertListMFormField := `
 	insert into partner.m_form_field
@@ -321,6 +326,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		mFieldTypeName, oKMFieldTypeName := mapMFieldType[mFieldTypeId]
 		if !oKMFieldTypeName {
 			if errRollback := tx.Rollback(); errRollback != nil {
+				log.Printf("errRollback: %v", errRollback)
 				response.StatusCode = http.StatusInternalServerError
 				response.Message = define.ErrInternalServerError.Error()
 				return response
@@ -333,9 +339,80 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		if mFieldTypeName == define.HAS_CHILD_M_FIELD_TYPE_DROPDOWN ||
 			mFieldTypeName == define.HAS_CHILD_M_FIELD_TYPE_RADIO_BUTTON {
 			// ennsure the child not empty
-		}
+			mFormFieldChilds, oKMFormFieldChilds := mapMFromFieldIdWithChilds[mFormFieldId]
+			log.Printf("mFormFieldChilds: %v, oKMFormFieldChilds: %v", mFormFieldChilds, oKMFormFieldChilds)
+			if !oKMFormFieldChilds {
+				if errRollback := tx.Rollback(); errRollback != nil {
+					log.Printf("errRollback: %v", errRollback)
+					response.StatusCode = http.StatusInternalServerError
+					response.Message = define.ErrInternalServerError.Error()
+					return response
+				}
+				response.StatusCode = http.StatusBadRequest
+				response.Message = define.ErrMFormFieldsEmpty.Error()
+				return response
+			}
 
-		_ = mFormFieldId
+			if len(mFormFieldChilds) == 0 {
+				if errRollback := tx.Rollback(); errRollback != nil {
+					log.Printf("errRollback: %v", errRollback)
+					response.StatusCode = http.StatusInternalServerError
+					response.Message = define.ErrInternalServerError.Error()
+					return response
+				}
+
+				response.StatusCode = http.StatusBadRequest
+				response.Message = define.ErrMFormFieldsEmpty.Error()
+				return response
+			}
+
+			paramInsertMFormFieldChilds := ``
+			lenMFormFieldChilds := len(mFormFieldChilds)
+			for i := 0; i < lenMFormFieldChilds; i++ {
+				mFormFieldChildsId := uuid.NewString()
+				if i != lenMFormFieldChilds-1 {
+					paramInsertMFormFieldChilds += fmt.Sprintf(`('%s','%s','%s', '%s'),`,
+						mFormFieldChildsId,
+						mFormFieldChilds[i].MFormFieldChildName,
+						mFormFieldId,
+						time.Now(),
+					)
+				} else {
+					paramInsertMFormFieldChilds += fmt.Sprintf(`('%s','%s','%s', '%s')`,
+						mFormFieldChildsId,
+						mFormFieldChilds[i].MFormFieldChildName,
+						mFormFieldId,
+						time.Now(),
+					)
+				}
+			}
+
+			queryInsertMFormFieldChilds := `
+			insert into	partner.m_form_field_childs
+				(id, name, m_form_field_id, created_at)
+			values
+			`
+			queryInsertMFormFieldChilds += fmt.Sprintf(` %s`, paramInsertMFormFieldChilds)
+			_, errInsertMFormFieldChilds := tx.Exec(queryInsertMFormFieldChilds)
+			if errInsertMFormFieldChilds != nil {
+				log.Printf("errInsertMFormFieldChilds: %v", errInsertMFormFieldChilds)
+				if errRollback := tx.Rollback(); errRollback != nil {
+					log.Printf("errRollback: %v", errRollback)
+					response.StatusCode = http.StatusInternalServerError
+					response.Message = define.ErrInternalServerError.Error()
+					return response
+				}
+				return response
+			}
+		}
+	}
+
+	// commit transaction
+	if errCommit := tx.Commit(); errCommit != nil {
+		log.Printf("errCommit: %v", errCommit)
+		response.StatusCode = http.StatusInternalServerError
+		response.Message = define.ErrQueryData.Error()
+		return response
 	}
 
 	return response
