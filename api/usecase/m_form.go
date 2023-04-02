@@ -8,4 +8,5 @@ import (
 
 type IMFormUsecase interface {
 	AddFrom(ctx context.Context, createMFormRequest payload.CreateMFormRequest) payload.Response
+	GetFormById(ctx context.Context, id string) payload.Response
 }

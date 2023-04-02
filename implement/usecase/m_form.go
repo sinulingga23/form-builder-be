@@ -388,3 +388,12 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 
 	return response
 }
+
+func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload.Response {
+	response := payload.Response{
+		StatusCode: http.StatusOK,
+		Message:    "Success to get the form.",
+	}
+
+	return response
+}
