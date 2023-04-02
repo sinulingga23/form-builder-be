@@ -26,7 +26,8 @@ func (repository *mPartnerRepository) IsExistById(ctx context.Context, id string
 	`
 	rowCheckMPartner := repository.db.QueryRow(queryCheckMPartner, id)
 	countCheckMPartner := 0
-	errRowCheckMpartner := rowCheckMPartner.Scan(&countCheckMPartner)
+	errRowCheckMpartner := rowCheckMPartner.Scan(
+		&countCheckMPartner)
 	if errRowCheckMpartner != nil {
 		return false, errRowCheckMpartner
 	}

@@ -40,7 +40,7 @@ create table partner.m_form_field (
     updated_at timestamp null,
     foreign key (m_form_id) references partner.m_form (id)
     on update cascade on delete restrict,
-    foreign key (m_form_type_id) references partner.m_form_field (id)
+    foreign key (m_form_type_id) references partner.m_field_type (id)
     on update cascade on delete restrict
 );
 

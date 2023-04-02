@@ -1,6 +1,7 @@
 package delivery
 
 import (
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -24,9 +25,12 @@ func (delivery *formHttp) ServeHandler(r *gin.RouterGroup) {
 }
 
 func (delivery *formHttp) HandleAddForm(r *gin.Context) {
-	createMFormRequest := payload.CreateMFormRequest{}
+	data := struct {
+		Data payload.CreateMFormRequest `json:"data"`
+	}{}
 
-	if errBind := r.Bind(&createMFormRequest); errBind != nil {
+	if errBind := r.Bind(&data); errBind != nil {
+		log.Printf("errBind: %v", errBind)
 		r.JSON(http.StatusBadRequest, payload.Response{
 			StatusCode: http.StatusBadRequest,
 			Message:    define.ErrFailedBind.Error(),
@@ -34,7 +38,7 @@ func (delivery *formHttp) HandleAddForm(r *gin.Context) {
 		return
 	}
 
-	response := delivery.mFormUsecase.AddFrom(r.Request.Context(), createMFormRequest)
+	response := delivery.mFormUsecase.AddFrom(r.Request.Context(), data.Data)
 	r.JSON(response.StatusCode, response)
 	return
 }

@@ -1,6 +1,9 @@
 package define
 
 const (
-	HAS_CHILD_M_FIELD_TYPE_DROPDOWN     = "Dropdown"
-	HAS_CHILD_M_FIELD_TYPE_RADIO_BUTTON = "Radio Button"
+	M_FIELD_TYPE_DROPDOWN     = "Dropdown"
+	M_FIELD_TYPE_RADIO_BUTTON = "Radio Button"
+	M_FIELD_TYPE_NUMERIC      = "Numeric"
+
+	LENGTH_CODE_FOR_M_FORM = 7
 )

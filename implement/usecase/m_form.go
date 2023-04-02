@@ -57,6 +57,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 
 	// validate all the MFieldTypeId
 	mFieldTypeIds := make([]string, 0)
+	mapOrdering := make(map[int]int)
 	for _, mFormField := range createMFormRequest.MFormFields {
 		if strings.Trim(mFormField.MFormFieldName, " ") == "" {
 			response.StatusCode = http.StatusBadRequest
@@ -78,12 +79,20 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		}
 
 		mFieldTypeIds = append(mFieldTypeIds, mFormField.MFieldTypeId)
+
+		// egde case, ensure ordering not duplicate from client
+		mapOrdering[mFormField.MFormFieldOrdering] += 1
+		if mapOrdering[mFormField.MFormFieldOrdering] > 1 {
+			response.StatusCode = http.StatusBadRequest
+			response.Message = define.ErrOrderingCantDuplicet.Error()
+			return response
+		}
 	}
 
 	// check m_parther by mPartnerId, ensure it's exists
 	isMPartnerExists, errIsExistsById := usecase.mPartnerRepository.IsExistById(ctx, createMFormRequest.MPartnerId)
 	if errIsExistsById != nil {
-		log.Printf("errIsExistsById ")
+		log.Printf("errIsExistsById: %v", errIsExistsById)
 		if errors.Is(errIsExistsById, sql.ErrNoRows) {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMPartnerNotFound.Error()
@@ -193,22 +202,6 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		return response
 	}
 
-	// compare length of listMFieldType with mFormFields, it should same.
-	// if not same, maybe is there some m_field_type not exists
-	if len(listMFieldType) != len(createMFormRequest.MFormFields) {
-		log.Printf("len(listMFieldType): %v, len(createMFormRequest.MFormFields): %v", len(listMFieldType), len(createMFormRequest.MFormFields))
-		if errRollback := tx.Rollback(); errRollback != nil {
-			log.Printf("errRollback: %v", errRollback)
-			response.StatusCode = http.StatusInternalServerError
-			response.Message = define.ErrInternalServerError.Error()
-			return response
-		}
-
-		response.StatusCode = http.StatusNotFound
-		response.Message = define.ErrMFieldTypeNotFound.Error()
-		return response
-	}
-
 	// convert listMFieldType into an map, the
 	mapMFieldType := make(map[string]string)
 	for _, mFieldType := range listMFieldType {
@@ -225,7 +218,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	mFormId := uuid.NewString()
 	_, errInsertMForm := tx.Exec(queryInsertMForm,
 		mFormId,
-		"code",
+		define.GenerateRandomString(define.LENGTH_CODE_FOR_M_FORM),
 		createMFormRequest.MFormName,
 		createMFormRequest.MPartnerId,
 		time.Now())
@@ -259,7 +252,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 				mFormField.MFormFieldIsMandatory,
 				mFormField.MFormFieldOrdering,
 				mFormField.MFormFieldPlaceholder,
-				time.Now())
+				time.Now().Format(time.RFC3339))
 		} else {
 			paramInsertListMFormField += fmt.Sprintf(`('%s','%s','%s', '%s', '%v', '%v', '%s', '%v')`,
 				mFormFieldId,
@@ -269,7 +262,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 				mFormField.MFormFieldIsMandatory,
 				mFormField.MFormFieldOrdering,
 				mFormField.MFormFieldPlaceholder,
-				time.Now())
+				time.Now().Format(time.RFC3339))
 		}
 
 		mapMFormFieldIdWithMFieldType[mFormFieldId] = mFormField.MFieldTypeId
@@ -277,7 +270,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	}
 	queryInsertListMFormField := `
 	insert into partner.m_form_field
-		(id, name, m_form_id, m_form_type_id, is_mandatory, ordering, created_at)
+		(id, name, m_form_id, m_form_type_id, is_mandatory, ordering, placeholder, created_at)
 	values
 	`
 	queryInsertListMFormField += fmt.Sprintf(" %s", paramInsertListMFormField)
@@ -299,6 +292,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	for mFormFieldId, mFieldTypeId := range mapMFormFieldIdWithMFieldType {
 		mFieldTypeName, oKMFieldTypeName := mapMFieldType[mFieldTypeId]
 		if !oKMFieldTypeName {
+			log.Printf("oKMFieldTypeName: %v", oKMFieldTypeName)
 			if errRollback := tx.Rollback(); errRollback != nil {
 				log.Printf("errRollback: %v", errRollback)
 				response.StatusCode = http.StatusInternalServerError
@@ -310,8 +304,8 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 			return response
 		}
 
-		if mFieldTypeName == define.HAS_CHILD_M_FIELD_TYPE_DROPDOWN ||
-			mFieldTypeName == define.HAS_CHILD_M_FIELD_TYPE_RADIO_BUTTON {
+		if mFieldTypeName == define.M_FIELD_TYPE_DROPDOWN ||
+			mFieldTypeName == define.M_FIELD_TYPE_RADIO_BUTTON {
 			// ennsure the child not empty
 			mFormFieldChilds, oKMFormFieldChilds := mapMFromFieldIdWithChilds[mFormFieldId]
 			log.Printf("mFormFieldChilds: %v, oKMFormFieldChilds: %v", mFormFieldChilds, oKMFormFieldChilds)
@@ -349,14 +343,14 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 						mFormFieldChildsId,
 						mFormFieldChilds[i].MFormFieldChildName,
 						mFormFieldId,
-						time.Now(),
+						time.Now().Format(time.RFC3339),
 					)
 				} else {
 					paramInsertMFormFieldChilds += fmt.Sprintf(`('%s','%s','%s', '%s')`,
 						mFormFieldChildsId,
 						mFormFieldChilds[i].MFormFieldChildName,
 						mFormFieldId,
-						time.Now(),
+						time.Now().Format(time.RFC3339),
 					)
 				}
 			}
@@ -376,6 +370,9 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 					response.Message = define.ErrInternalServerError.Error()
 					return response
 				}
+
+				response.StatusCode = http.StatusInternalServerError
+				response.Message = define.ErrQueryData.Error()
 				return response
 			}
 		}
