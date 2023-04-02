@@ -12,7 +12,7 @@ type (
 		MFormId     string
 		MFormTypeId string
 		IsMandatory bool
-		Ordering    string
+		Ordering    int
 		Placeholder string
 		CreatedAt   time.Time
 		UpdatedAt   sql.NullTime

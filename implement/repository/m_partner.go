@@ -5,6 +5,7 @@ import (
 	"database/sql"
 
 	"github.com/sinulingga23/form-builder-be/api/repository"
+	"github.com/sinulingga23/form-builder-be/model"
 )
 
 type mPartnerRepository struct {
@@ -41,4 +42,29 @@ func (repository *mPartnerRepository) IsExistById(ctx context.Context, id string
 	}
 
 	return true, nil
+}
+
+func (repository *mPartnerRepository) FindOne(ctx context.Context, id string) (model.MPartner, error) {
+	query := `
+	select
+		id, name, description, created_at, updated_at
+	from
+		partner.m_partner
+	where
+		id = $1
+	`
+	row := repository.db.QueryRow(query, id)
+	mPartner := model.MPartner{}
+	errScan := row.Scan(
+		&mPartner.Id,
+		&mPartner.Name,
+		&mPartner.Description,
+		&mPartner.CreatedAt,
+		&mPartner.UpdatedAt,
+	)
+	if errScan != nil {
+		return model.MPartner{}, errScan
+	}
+
+	return mPartner, nil
 }

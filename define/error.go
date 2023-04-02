@@ -14,4 +14,7 @@ var (
 	ErrMFormFieldsEmpty     = errors.New("Form Fields can't empty.")
 	ErrFailedBind           = errors.New("Bad Request")
 	ErrOrderingCantDuplicet = errors.New("Ordering form field can't duplicate.")
+	ErrMFormNotFound        = errors.New("Form not found.")
+	ErrMFormFieldNotFound   = errors.New("Form Field not found.")
+	ErrIdEmpty              = errors.New("Id can't empty.")
 )

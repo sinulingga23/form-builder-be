@@ -22,6 +22,7 @@ func NewFormHttp(
 
 func (delivery *formHttp) ServeHandler(r *gin.RouterGroup) {
 	r.POST("/api/v1/forms", delivery.HandleAddForm)
+	r.GET("/api/v1/forms/:id", delivery.HandleGetFormById)
 }
 
 func (delivery *formHttp) HandleAddForm(r *gin.Context) {
@@ -39,6 +40,14 @@ func (delivery *formHttp) HandleAddForm(r *gin.Context) {
 	}
 
 	response := delivery.mFormUsecase.AddFrom(r.Request.Context(), data.Data)
+	r.JSON(response.StatusCode, response)
+	return
+}
+
+func (delivery *formHttp) HandleGetFormById(r *gin.Context) {
+	id := r.Param("id")
+
+	response := delivery.mFormUsecase.GetFormById(r.Request.Context(), id)
 	r.JSON(response.StatusCode, response)
 	return
 }

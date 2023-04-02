@@ -19,15 +19,27 @@ import (
 )
 
 type mFormUsecase struct {
-	db                 *sql.DB
-	mPartnerRepository repository.IMPartnerRepository
+	db                   *sql.DB
+	mPartnerRepository   repository.IMPartnerRepository
+	mFieldTypeRepository repository.IMFieldTypeRepository
+	mFormRepository      repository.IMFormRepository
+	mFormFieldRepository repository.IMFormFieldRepository
 }
 
 func NewMFormUsecase(
 	db *sql.DB,
-	mPartnerRepositoru repository.IMPartnerRepository,
+	mPartnerRepository repository.IMPartnerRepository,
+	mFieldRepository repository.IMFieldTypeRepository,
+	mFormRepository repository.IMFormRepository,
+	mFormFieldRepository repository.IMFormFieldRepository,
 ) usecase.IMFormUsecase {
-	return &mFormUsecase{db: db, mPartnerRepository: mPartnerRepositoru}
+	return &mFormUsecase{
+		db:                   db,
+		mPartnerRepository:   mPartnerRepository,
+		mFieldTypeRepository: mFieldRepository,
+		mFormRepository:      mFormRepository,
+		mFormFieldRepository: mFormFieldRepository,
+	}
 }
 
 func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest payload.CreateMFormRequest) payload.Response {
@@ -395,5 +407,137 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		Message:    "Success to get the form.",
 	}
 
+	if strings.Trim(id, " ") == "" {
+		response.StatusCode = http.StatusBadRequest
+		response.Message = define.ErrIdEmpty.Error()
+		return response
+	}
+
+	_, errPase := uuid.Parse(id)
+	if errPase != nil {
+		response.StatusCode = http.StatusNotFound
+		response.Message = define.ErrMFormNotFound.Error()
+		return response
+	}
+
+	mForm, errFindOneMForm := usecase.mFormRepository.FindOne(ctx, id)
+	if errFindOneMForm != nil {
+		log.Printf("errFindOneMForm: %v", errFindOneMForm)
+		if errors.Is(errFindOneMForm, sql.ErrNoRows) {
+			response.StatusCode = http.StatusNotFound
+			response.Message = define.ErrMFormNotFound.Error()
+			return response
+		}
+
+		response.StatusCode = http.StatusInternalServerError
+		response.Message = define.ErrQueryData.Error()
+		return response
+	}
+
+	mPartner, errFindOneMPartner := usecase.mPartnerRepository.FindOne(ctx, mForm.MPartnerId)
+	if errFindOneMPartner != nil {
+		log.Printf("errFindOneMPartner: %v", errFindOneMPartner)
+		if errors.Is(errFindOneMPartner, sql.ErrNoRows) {
+			response.StatusCode = http.StatusNotFound
+			response.Message = define.ErrMPartnerNotFound.Error()
+			return response
+		}
+
+		response.StatusCode = http.StatusInternalServerError
+		response.Message = define.ErrInternalServerError.Error()
+		return response
+	}
+
+	listMFormField, errFindListFormFieldByMFormId := usecase.mFormFieldRepository.FindListFormFieldByMFormId(ctx, mForm.Id)
+	if errFindListFormFieldByMFormId != nil {
+		log.Printf("FindListFormFieldByMFormId: %v", errFindListFormFieldByMFormId)
+		if errors.Is(errFindListFormFieldByMFormId, sql.ErrNoRows) {
+			response.StatusCode = http.StatusNotFound
+			response.Message = define.ErrMFormFieldNotFound.Error()
+			return response
+		}
+
+		response.StatusCode = http.StatusInternalServerError
+		response.Message = define.ErrQueryData.Error()
+		return response
+	}
+
+	if len(listMFormField) == 0 {
+		response.StatusCode = http.StatusNotFound
+		response.Message = define.ErrMFormFieldNotFound.Error()
+		return response
+	}
+
+	mFieldTypeIds := make([]string, 0)
+	for _, mFieldType := range listMFormField {
+		mFieldTypeIds = append(mFieldTypeIds, mFieldType.Id)
+	}
+
+	listMFieldType, errFindListMFieldTypeByIds := usecase.mFieldTypeRepository.FindListMFieldTypeByIds(ctx, mFieldTypeIds)
+	if errFindListMFieldTypeByIds != nil {
+		log.Printf("errFindListMFieldTypeByIds: %v", errFindListMFieldTypeByIds)
+		if errors.Is(errFindListMFieldTypeByIds, sql.ErrNoRows) {
+			response.StatusCode = http.StatusNotFound
+			response.Message = define.ErrMFieldTypeNotFound.Error()
+			return response
+		}
+
+		response.StatusCode = http.StatusInternalServerError
+		response.Message = define.ErrQueryData.Error()
+		return response
+	}
+
+	if len(listMFieldType) == 0 {
+		response.StatusCode = http.StatusNotFound
+		response.Message = define.ErrMFieldTypeNotFound.Error()
+		return response
+	}
+
+	listMFormFieldResponse := make([]payload.MFormFieldResponse, 0)
+	mapFieldType := make(map[string]string)
+	for _, mFiedlType := range listMFieldType {
+		mapFieldType[mFiedlType.Id] = mFiedlType.Name
+	}
+
+	for _, mFormField := range listMFormField {
+		mFormFieldResponse := payload.MFormFieldResponse{}
+
+		mFormFieldResponse.MFormFieldId = mFormField.Id
+		mFormFieldResponse.MFormFieldName = mFormField.Name
+		mFormFieldResponse.MFormFieldIsMandatory = mFormField.IsMandatory
+		mFormFieldResponse.MFormFieldOrdering = mFormField.Ordering
+		mFormFieldResponse.MFormFieldPlaceholder = mFormField.Placeholder
+
+		// TODO: mFormFieldResponse.MFormFieldChildsResponse
+
+		mFormFieldResponse.MFieldTypeId = mFormField.MFormTypeId
+		mFieldTypeName, okMFieldTypeName := mapFieldType[mFormField.MFormTypeId]
+		if !okMFieldTypeName {
+			response.StatusCode = http.StatusNotFound
+			response.Message = define.ErrMFieldTypeNotFound.Error()
+			return response
+		}
+		mFormFieldResponse.MFieldTypeName = mFieldTypeName
+
+		listMFormFieldResponse = append(listMFormFieldResponse, mFormFieldResponse)
+	}
+
+	updateAt := time.Time{}
+	if mForm.UpdatedAt.Valid {
+		updateAt = mForm.UpdatedAt.Time
+	}
+
+	mFormDetailResponse := payload.MFormDetailResponse{
+		MFormId:             mForm.Id,
+		MFormName:           mForm.Name,
+		MFormCode:           mForm.Code,
+		MPartnerId:          mPartner.Id,
+		MPartnerName:        mPartner.Name,
+		MFormFieldsResponse: listMFormFieldResponse,
+		MFormCreatedAt:      mForm.CreatedAt,
+		MFormUpdatedAt:      updateAt,
+	}
+
+	response.Data = mFormDetailResponse
 	return response
 }

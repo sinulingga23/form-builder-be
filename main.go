@@ -40,9 +40,18 @@ func main() {
 		log.Fatalf("errConnectDB: %v", errConnectDB)
 	}
 	mPartnerRepository := repository.NewMPartnerRepository(db)
+	mFieldTypeRepository := repository.NewMFieldTypeRepository(db)
+	mFormRepository := repository.NewMFormRepository(db)
+	mFormFieldRepository := repository.NewMFormFieldRepository(db)
 
 	// usecase
-	mFormUsecase := usecase.NewMFormUsecase(db, mPartnerRepository)
+	mFormUsecase := usecase.NewMFormUsecase(
+		db,
+		mPartnerRepository,
+		mFieldTypeRepository,
+		mFormRepository,
+		mFormFieldRepository,
+	)
 
 	// delivery http
 	formHttp := delivery.NewFormHttp(mFormUsecase)
