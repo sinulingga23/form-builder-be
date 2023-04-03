@@ -34,14 +34,14 @@ type (
 	}
 
 	MFormFieldResponse struct {
-		MFieldTypeId             string            `json:"mFieldTypeId"`
-		MFieldTypeName           string            `json:"mFieldTypeID"`
-		MFormFieldId             string            `json:"mFormFieldId"`
-		MFormFieldName           string            `json:"mFormFieldName"`
-		MFormFieldIsMandatory    bool              `json:"mFormFieldIsMandatory"`
-		MFormFieldOrdering       int               `json:"mFormFieldOrdering"`
-		MFormFieldPlaceholder    string            `json:"mFormFieldPlaceholder"`
-		MFormFieldChildsResponse []MFormFieldChild `json:"mFormFieldChilds"`
+		MFieldTypeId             string                    `json:"mFieldTypeId"`
+		MFieldTypeName           string                    `json:"mFieldTypeID"`
+		MFormFieldId             string                    `json:"mFormFieldId"`
+		MFormFieldName           string                    `json:"mFormFieldName"`
+		MFormFieldIsMandatory    bool                      `json:"mFormFieldIsMandatory"`
+		MFormFieldOrdering       int                       `json:"mFormFieldOrdering"`
+		MFormFieldPlaceholder    string                    `json:"mFormFieldPlaceholder"`
+		MFormFieldChildsResponse []MFormFieldChildResponse `json:"mFormFieldChilds"`
 	}
 
 	MFormFieldChildResponse struct {

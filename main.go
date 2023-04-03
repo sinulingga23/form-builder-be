@@ -43,6 +43,7 @@ func main() {
 	mFieldTypeRepository := repository.NewMFieldTypeRepository(db)
 	mFormRepository := repository.NewMFormRepository(db)
 	mFormFieldRepository := repository.NewMFormFieldRepository(db)
+	mFormFieldChildsRepository := repository.NewMFormFieldChildsRepository(db)
 
 	// usecase
 	mFormUsecase := usecase.NewMFormUsecase(
@@ -51,6 +52,7 @@ func main() {
 		mFieldTypeRepository,
 		mFormRepository,
 		mFormFieldRepository,
+		mFormFieldChildsRepository,
 	)
 
 	// delivery http

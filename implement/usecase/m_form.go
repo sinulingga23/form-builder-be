@@ -19,11 +19,12 @@ import (
 )
 
 type mFormUsecase struct {
-	db                   *sql.DB
-	mPartnerRepository   repository.IMPartnerRepository
-	mFieldTypeRepository repository.IMFieldTypeRepository
-	mFormRepository      repository.IMFormRepository
-	mFormFieldRepository repository.IMFormFieldRepository
+	db                         *sql.DB
+	mPartnerRepository         repository.IMPartnerRepository
+	mFieldTypeRepository       repository.IMFieldTypeRepository
+	mFormRepository            repository.IMFormRepository
+	mFormFieldRepository       repository.IMFormFieldRepository
+	mFormFieldChildsRepository repository.IMFormFieldChildsRepository
 }
 
 func NewMFormUsecase(
@@ -32,13 +33,15 @@ func NewMFormUsecase(
 	mFieldRepository repository.IMFieldTypeRepository,
 	mFormRepository repository.IMFormRepository,
 	mFormFieldRepository repository.IMFormFieldRepository,
+	mFormFieldChildsRepository repository.IMFormFieldChildsRepository,
 ) usecase.IMFormUsecase {
 	return &mFormUsecase{
-		db:                   db,
-		mPartnerRepository:   mPartnerRepository,
-		mFieldTypeRepository: mFieldRepository,
-		mFormRepository:      mFormRepository,
-		mFormFieldRepository: mFormFieldRepository,
+		db:                         db,
+		mPartnerRepository:         mPartnerRepository,
+		mFieldTypeRepository:       mFieldRepository,
+		mFormRepository:            mFormRepository,
+		mFormFieldRepository:       mFormFieldRepository,
+		mFormFieldChildsRepository: mFormFieldChildsRepository,
 	}
 }
 
@@ -470,8 +473,10 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	}
 
 	mFieldTypeIds := make([]string, 0)
+	mFormFieldIds := make([]string, 0)
 	for _, mFormField := range listMFormField {
 		mFieldTypeIds = append(mFieldTypeIds, mFormField.MFieldTypeId)
+		mFormFieldIds = append(mFormFieldIds, mFormField.Id)
 	}
 
 	listMFieldType, errFindListMFieldTypeByIds := usecase.mFieldTypeRepository.FindListMFieldTypeByIds(ctx, mFieldTypeIds)
@@ -500,7 +505,30 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	for _, mFiedlType := range listMFieldType {
 		mapFieldType[mFiedlType.Id] = mFiedlType.Name
 	}
-	log.Printf("mapFieldType: %v", mapFieldType)
+
+	listMFormFieldChilds, errFindListMFormChildsByMFormFieldById := usecase.mFormFieldChildsRepository.FindListMFormFieldChildsByMFormFieldByIds(ctx, mFormFieldIds)
+	if errFindListMFormChildsByMFormFieldById != nil {
+		response.StatusCode = http.StatusInternalServerError
+		response.Message = define.ErrQueryData.Error()
+		return response
+	}
+
+	// ('d35ffd80-c932-4768-8fb5-77c7212058f2', '6ecd65d6-50f0-4831-9943-b4a290d09340', '357ae4c8-818b-4939-8c19-23e155907cb8', '883b222e-a1f8-4437-9460-fccb8221d390','76157af8-f6de-4b1c-a545-da3a92f61b63')
+	mapFormFieldIdWithListMFormFieldChilds := make(map[string][]payload.MFormFieldChildResponse)
+	lenMFormFieldChilds := len(listMFormFieldChilds)
+	for i := 0; i < lenMFormFieldChilds; i++ {
+		listMFormFieldChildResponse := make([]payload.MFormFieldChildResponse, 0)
+		for j := 0; j < lenMFormFieldChilds; j++ {
+			if listMFormFieldChilds[i].MFormFieldId == listMFormFieldChilds[j].MFormFieldId {
+				listMFormFieldChildResponse = append(listMFormFieldChildResponse, payload.MFormFieldChildResponse{
+					MFormFieldChildId:   listMFormFieldChilds[j].Id,
+					MFormFieldChildName: listMFormFieldChilds[j].Name,
+				})
+			}
+		}
+
+		mapFormFieldIdWithListMFormFieldChilds[listMFormFieldChilds[i].MFormFieldId] = listMFormFieldChildResponse
+	}
 
 	for _, mFormField := range listMFormField {
 		mFormFieldResponse := payload.MFormFieldResponse{}
@@ -511,8 +539,6 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		mFormFieldResponse.MFormFieldOrdering = mFormField.Ordering
 		mFormFieldResponse.MFormFieldPlaceholder = mFormField.Placeholder
 
-		// TODO: mFormFieldResponse.MFormFieldChildsResponse
-
 		mFormFieldResponse.MFieldTypeId = mFormField.MFieldTypeId
 		mFieldTypeName, okMFieldTypeName := mapFieldType[mFormField.MFieldTypeId]
 		if !okMFieldTypeName {
@@ -521,6 +547,13 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 			return response
 		}
 		mFormFieldResponse.MFieldTypeName = mFieldTypeName
+
+		listMFormFieldChilds, oKListMFormFieldChilds := mapFormFieldIdWithListMFormFieldChilds[mFormField.Id]
+		if oKListMFormFieldChilds {
+			mFormFieldResponse.MFormFieldChildsResponse = listMFormFieldChilds
+		} else {
+			mFormFieldResponse.MFormFieldChildsResponse = []payload.MFormFieldChildResponse{}
+		}
 
 		listMFormFieldResponse = append(listMFormFieldResponse, mFormFieldResponse)
 	}
