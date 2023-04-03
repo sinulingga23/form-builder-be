@@ -21,7 +21,7 @@ func (repository *mFormFieldRepository) FindListFormFieldByMFormId(ctx context.C
 	// TODO: Change column name m_from_type_id into m_field_type_id
 	query := `
 	select
-		id, name, m_form_id, m_form_type_id, is_mandatory, ordering, placeholder, created_at, updated_at
+		id, name, m_form_id, m_field_type_id, is_mandatory, ordering, placeholder, created_at, updated_at
 	from
 		partner.m_form_field
 	where
@@ -44,7 +44,7 @@ func (repository *mFormFieldRepository) FindListFormFieldByMFormId(ctx context.C
 			&mFormField.Id,
 			&mFormField.Name,
 			&mFormField.MFormId,
-			&mFormField.MFormTypeId,
+			&mFormField.MFieldTypeId,
 			&mFormField.IsMandatory,
 			&mFormField.Ordering,
 			&mFormField.Placeholder,

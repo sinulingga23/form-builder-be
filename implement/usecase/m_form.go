@@ -282,7 +282,7 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	}
 	queryInsertListMFormField := `
 	insert into partner.m_form_field
-		(id, name, m_form_id, m_form_type_id, is_mandatory, ordering, placeholder, created_at)
+		(id, name, m_form_id, m_field_type_id, is_mandatory, ordering, placeholder, created_at)
 	values
 	`
 	queryInsertListMFormField += fmt.Sprintf(" %s", paramInsertListMFormField)
@@ -317,7 +317,8 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		}
 
 		if mFieldTypeName == define.M_FIELD_TYPE_DROPDOWN ||
-			mFieldTypeName == define.M_FIELD_TYPE_RADIO_BUTTON {
+			mFieldTypeName == define.M_FIELD_TYPE_RADIO_BUTTON ||
+			mFieldTypeName == define.M_FIELD_TYPE_CHECKBOX {
 			// ennsure the child not empty
 			mFormFieldChilds, oKMFormFieldChilds := mapMFromFieldIdWithChilds[mFormFieldId]
 			log.Printf("mFormFieldChilds: %v, oKMFormFieldChilds: %v", mFormFieldChilds, oKMFormFieldChilds)
@@ -469,8 +470,8 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	}
 
 	mFieldTypeIds := make([]string, 0)
-	for _, mFieldType := range listMFormField {
-		mFieldTypeIds = append(mFieldTypeIds, mFieldType.Id)
+	for _, mFormField := range listMFormField {
+		mFieldTypeIds = append(mFieldTypeIds, mFormField.MFieldTypeId)
 	}
 
 	listMFieldType, errFindListMFieldTypeByIds := usecase.mFieldTypeRepository.FindListMFieldTypeByIds(ctx, mFieldTypeIds)
@@ -488,6 +489,7 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	}
 
 	if len(listMFieldType) == 0 {
+		log.Printf("listMFieldType: %v", listMFieldType)
 		response.StatusCode = http.StatusNotFound
 		response.Message = define.ErrMFieldTypeNotFound.Error()
 		return response
@@ -498,6 +500,7 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	for _, mFiedlType := range listMFieldType {
 		mapFieldType[mFiedlType.Id] = mFiedlType.Name
 	}
+	log.Printf("mapFieldType: %v", mapFieldType)
 
 	for _, mFormField := range listMFormField {
 		mFormFieldResponse := payload.MFormFieldResponse{}
@@ -510,8 +513,8 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 
 		// TODO: mFormFieldResponse.MFormFieldChildsResponse
 
-		mFormFieldResponse.MFieldTypeId = mFormField.MFormTypeId
-		mFieldTypeName, okMFieldTypeName := mapFieldType[mFormField.MFormTypeId]
+		mFormFieldResponse.MFieldTypeId = mFormField.MFieldTypeId
+		mFieldTypeName, okMFieldTypeName := mapFieldType[mFormField.MFieldTypeId]
 		if !okMFieldTypeName {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMFieldTypeNotFound.Error()
