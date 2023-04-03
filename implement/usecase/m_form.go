@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/sinulingga23/form-builder-be/api/repository"
 	"github.com/sinulingga23/form-builder-be/api/usecase"
+	"github.com/sinulingga23/form-builder-be/cache"
 	"github.com/sinulingga23/form-builder-be/define"
 	"github.com/sinulingga23/form-builder-be/model"
 	"github.com/sinulingga23/form-builder-be/payload"
@@ -411,6 +412,12 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		Message:    "Success to get the form.",
 	}
 
+	cacheResponse, errGetValue := cache.GetValue(ctx, id)
+	if errGetValue == nil {
+		return cacheResponse.(payload.Response)
+	}
+	log.Printf("errGetValue: %v", errGetValue)
+
 	if strings.Trim(id, " ") == "" {
 		response.StatusCode = http.StatusBadRequest
 		response.Message = define.ErrIdEmpty.Error()
@@ -575,5 +582,10 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	}
 
 	response.Data = mFormDetailResponse
+	go func() {
+		if errSetValue := cache.SetValue(ctx, id, response); errSetValue != nil {
+			log.Printf("errSetValue: %v", errSetValue)
+		}
+	}()
 	return response
 }

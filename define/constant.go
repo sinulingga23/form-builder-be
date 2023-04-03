@@ -6,5 +6,6 @@ const (
 	M_FIELD_TYPE_NUMERIC      = "Numeric"
 	M_FIELD_TYPE_CHECKBOX     = "Checkbox"
 
-	LENGTH_CODE_FOR_M_FORM = 7
+	LENGTH_CODE_FOR_M_FORM     = 7
+	DEFAULT_TIME_TO_LIVE_CACHE = 24 // Hour
 )
