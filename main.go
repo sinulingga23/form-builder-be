@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sinulingga23/form-builder-be/config"
 	delivery "github.com/sinulingga23/form-builder-be/delivery/http"
 	"github.com/sinulingga23/form-builder-be/implement/repository"
@@ -21,6 +22,13 @@ var (
 func init() {
 	if os.Getenv("PORT") != "" {
 		port = os.Getenv("PORT")
+	}
+}
+
+func prometheusHandler() gin.HandlerFunc {
+	h := promhttp.Handler()
+	return func(ctx *gin.Context) {
+		h.ServeHTTP(ctx.Writer, ctx.Request)
 	}
 }
 
@@ -58,6 +66,9 @@ func main() {
 	// delivery http
 	formHttp := delivery.NewFormHttp(mFormUsecase)
 	formHttp.ServeHandler(&r.RouterGroup)
+
+	promhttp.Handler()
+	r.Handle(http.MethodGet, "/metrics", prometheusHandler())
 
 	log.Printf("form-builder-be service served on :%v", port)
 	if errListenAndServe := http.ListenAndServe(fmt.Sprintf(":%v", port), r); errListenAndServe != nil {

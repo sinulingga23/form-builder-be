@@ -31,6 +31,15 @@ services:
     volumes:
       - ./default.conf:/etc/nginx/conf.d/default.conf
       - nginx_log_form_builder_be:/var/log/nginx/
+  prometheus:
+    image: prom/prometheus:v2.37.6
+    container_name: prometheus-form-builder-be
+    ports:
+      - "9090:9090"
+    depends_on:
+      - form-builder-be
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
 
 
 volumes:
