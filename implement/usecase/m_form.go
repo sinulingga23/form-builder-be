@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ import (
 	"github.com/sinulingga23/form-builder-be/cache"
 	"github.com/sinulingga23/form-builder-be/define"
 	"github.com/sinulingga23/form-builder-be/model"
+	"github.com/sinulingga23/form-builder-be/monitoring"
 	"github.com/sinulingga23/form-builder-be/payload"
 )
 
@@ -26,6 +28,7 @@ type mFormUsecase struct {
 	mFormRepository            repository.IMFormRepository
 	mFormFieldRepository       repository.IMFormFieldRepository
 	mFormFieldChildsRepository repository.IMFormFieldChildsRepository
+	metric                     *monitoring.Metric
 }
 
 func NewMFormUsecase(
@@ -35,6 +38,7 @@ func NewMFormUsecase(
 	mFormRepository repository.IMFormRepository,
 	mFormFieldRepository repository.IMFormFieldRepository,
 	mFormFieldChildsRepository repository.IMFormFieldChildsRepository,
+	metric *monitoring.Metric,
 ) usecase.IMFormUsecase {
 	return &mFormUsecase{
 		db:                         db,
@@ -43,6 +47,7 @@ func NewMFormUsecase(
 		mFormRepository:            mFormRepository,
 		mFormFieldRepository:       mFormFieldRepository,
 		mFormFieldChildsRepository: mFormFieldChildsRepository,
+		metric:                     metric,
 	}
 }
 
@@ -52,15 +57,22 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		Message:    "Success add a new form.",
 	}
 
+	serviceName := "m_form_service:add_form"
+	usecase.metric.Now = time.Now()
+
 	if strings.Trim(createMFormRequest.MFormName, " ") == "" {
 		response.StatusCode = http.StatusBadRequest
 		response.Message = define.ErrMFormNameEmpty.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusBadRequest))
 		return response
 	}
 
 	if strings.Trim(createMFormRequest.MPartnerId, " ") == "" {
 		response.StatusCode = http.StatusBadRequest
 		response.Message = define.ErrMPartnerIdEmpty.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusBadRequest))
 		return response
 	}
 
@@ -68,6 +80,8 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 	if errParsePartnerId != nil {
 		response.StatusCode = http.StatusNotFound
 		response.Message = define.ErrMPartnerNotFound.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusNotFound))
 		return response
 	}
 
@@ -78,12 +92,16 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		if strings.Trim(mFormField.MFormFieldName, " ") == "" {
 			response.StatusCode = http.StatusBadRequest
 			response.Message = define.ErrMFormFieldNameEmpty.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusBadRequest))
 			return response
 		}
 
 		if strings.Trim(mFormField.MFieldTypeId, " ") == "" {
 			response.StatusCode = http.StatusBadRequest
 			response.Message = define.ErrMFieldTypeIdEmpty.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusBadRequest))
 			return response
 		}
 
@@ -91,6 +109,8 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		if errParseMFieldTypeId != nil {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMFieldTypeNotFound.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusNotFound))
 			return response
 		}
 
@@ -101,6 +121,8 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		if mapOrdering[mFormField.MFormFieldOrdering] > 1 {
 			response.StatusCode = http.StatusBadRequest
 			response.Message = define.ErrOrderingCantDuplicet.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusBadRequest))
 			return response
 		}
 	}
@@ -112,17 +134,23 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		if errors.Is(errIsExistsById, sql.ErrNoRows) {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMPartnerNotFound.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusNotFound))
 			return response
 		}
 
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrInternalServerError.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 		return response
 	}
 
 	if !isMPartnerExists {
 		response.StatusCode = http.StatusNotFound
 		response.Message = define.ErrMPartnerNotFound.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusNotFound))
 		return response
 	}
 
@@ -133,6 +161,8 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		}
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrInternalServerError.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 		return response
 	}
 
@@ -163,6 +193,8 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		if errors.Is(errQueryMFieldTypeByIds, sql.ErrNoRows) {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMFieldTypeNotFound.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusNotFound))
 			return response
 		}
 
@@ -170,11 +202,15 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 			log.Printf("errRollback: %v", errRollback)
 			response.StatusCode = http.StatusInternalServerError
 			response.Message = define.ErrInternalServerError.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 			return response
 		}
 
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 		return response
 	}
 	defer func() {
@@ -195,12 +231,16 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 				log.Printf("errRollback: %v", errRollback)
 				response.StatusCode = http.StatusInternalServerError
 				response.Message = define.ErrInternalServerError.Error()
+
+				go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 				return response
 			}
 
 			log.Printf("errScan: %v", errScan)
 			response.StatusCode = http.StatusInternalServerError
 			response.Message = define.ErrQueryData.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 			return response
 		}
 
@@ -211,10 +251,14 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 			log.Printf("errRollback: %v", errRollback)
 			response.StatusCode = http.StatusInternalServerError
 			response.Message = define.ErrInternalServerError.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 			return response
 		}
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 		return response
 	}
 
@@ -244,11 +288,15 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 			log.Printf("errRollback: %v", errRollback)
 			response.StatusCode = http.StatusInternalServerError
 			response.Message = define.ErrInternalServerError.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 			return response
 		}
 
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 		return response
 	}
 
@@ -296,10 +344,14 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		if errRollback := tx.Rollback(); errRollback != nil {
 			response.StatusCode = http.StatusInternalServerError
 			response.Message = define.ErrInternalServerError.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 			return response
 		}
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 		return response
 	}
 
@@ -313,10 +365,14 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 				log.Printf("errRollback: %v", errRollback)
 				response.StatusCode = http.StatusInternalServerError
 				response.Message = define.ErrInternalServerError.Error()
+
+				go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 				return response
 			}
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMFieldTypeNotFound.Error()
+
+			go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusNotFound))
 			return response
 		}
 
@@ -331,10 +387,14 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 					log.Printf("errRollback: %v", errRollback)
 					response.StatusCode = http.StatusInternalServerError
 					response.Message = define.ErrInternalServerError.Error()
+
+					go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 					return response
 				}
 				response.StatusCode = http.StatusBadRequest
 				response.Message = define.ErrMFormFieldsEmpty.Error()
+
+				go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusBadRequest))
 				return response
 			}
 
@@ -343,11 +403,15 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 					log.Printf("errRollback: %v", errRollback)
 					response.StatusCode = http.StatusInternalServerError
 					response.Message = define.ErrInternalServerError.Error()
+
+					go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 					return response
 				}
 
 				response.StatusCode = http.StatusBadRequest
 				response.Message = define.ErrMFormFieldsEmpty.Error()
+
+				go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusBadRequest))
 				return response
 			}
 
@@ -385,11 +449,15 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 					log.Printf("errRollback: %v", errRollback)
 					response.StatusCode = http.StatusInternalServerError
 					response.Message = define.ErrInternalServerError.Error()
+
+					go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 					return response
 				}
 
 				response.StatusCode = http.StatusInternalServerError
 				response.Message = define.ErrQueryData.Error()
+
+				go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 				return response
 			}
 		}
@@ -400,9 +468,12 @@ func (usecase *mFormUsecase) AddFrom(ctx context.Context, createMFormRequest pay
 		log.Printf("errCommit: %v", errCommit)
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusInternalServerError))
 		return response
 	}
 
+	go usecase.metric.CaptureMetrics(serviceName, http.MethodPost, strconv.Itoa(http.StatusOK))
 	return response
 }
 

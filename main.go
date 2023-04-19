@@ -8,11 +8,13 @@ import (
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sinulingga23/form-builder-be/config"
 	delivery "github.com/sinulingga23/form-builder-be/delivery/http"
 	"github.com/sinulingga23/form-builder-be/implement/repository"
 	"github.com/sinulingga23/form-builder-be/implement/usecase"
+	"github.com/sinulingga23/form-builder-be/monitoring"
 )
 
 var (
@@ -53,6 +55,10 @@ func main() {
 	mFormFieldRepository := repository.NewMFormFieldRepository(db)
 	mFormFieldChildsRepository := repository.NewMFormFieldChildsRepository(db)
 
+	// metric
+	registry := prometheus.NewRegistry()
+	metric := monitoring.NewMetric(registry)
+
 	// usecase
 	mFormUsecase := usecase.NewMFormUsecase(
 		db,
@@ -61,6 +67,7 @@ func main() {
 		mFormRepository,
 		mFormFieldRepository,
 		mFormFieldChildsRepository,
+		metric,
 	)
 
 	// delivery http
@@ -68,7 +75,10 @@ func main() {
 	formHttp.ServeHandler(&r.RouterGroup)
 
 	promhttp.Handler()
-	r.Handle(http.MethodGet, "/metrics", prometheusHandler())
+	r.GET("/metrics", func(ctx *gin.Context) {
+		h := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
+		h.ServeHTTP(ctx.Writer, ctx.Request)
+	})
 
 	log.Printf("form-builder-be service served on :%v", port)
 	if errListenAndServe := http.ListenAndServe(fmt.Sprintf(":%v", port), r); errListenAndServe != nil {
