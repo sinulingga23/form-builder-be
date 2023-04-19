@@ -38,6 +38,7 @@ cooming soon
 
 ## Metrics Monitoring
 In this project using Prometheus for capture metrics from the program.
+* Try hit the services from the available endpoints as much as you want.
 * Open ```localhost:8087/metrics``` at your favorite browser
 * You will see somethings like these:
 ```
