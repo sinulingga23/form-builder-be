@@ -34,7 +34,7 @@ docker run --name nginx -p "80:80" -v $(pwd)/default.conf:/etc/nginx/default.con
 ```
 
 ### Manually
-cooming son
+cooming soon
 
 ## Metrics Monitoring
 In this project using Prometheus for capture metrics from the program.
