@@ -44,34 +44,52 @@ In this project using Prometheus for capture metrics from the program.
 ```
 # HELP form_builder_be_duration_request_endpoint It's show duration request for each endpoint
 # TYPE form_builder_be_duration_request_endpoint histogram
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id",le="0.1"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id",le="0.15"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id",le="0.2"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id",le="0.25"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id",le="0.3"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id",le="+Inf"} 13
+form_builder_be_duration_request_endpoint_sum{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id"} 1.313066207e+09
+form_builder_be_duration_request_endpoint_count{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id"} 13
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id",le="0.1"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id",le="0.15"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id",le="0.2"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id",le="0.25"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id",le="0.3"} 0
+form_builder_be_duration_request_endpoint_bucket{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id",le="+Inf"} 10
+form_builder_be_duration_request_endpoint_sum{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id"} 9.9868304e+08
+form_builder_be_duration_request_endpoint_count{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id"} 10
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="200",service_name="m_form_service:add_form",le="0.1"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="200",service_name="m_form_service:add_form",le="0.15"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="200",service_name="m_form_service:add_form",le="0.2"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="200",service_name="m_form_service:add_form",le="0.25"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="200",service_name="m_form_service:add_form",le="0.3"} 0
-form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="200",service_name="m_form_service:add_form",le="+Inf"} 20
-form_builder_be_duration_request_endpoint_sum{http_method="POST",http_status="200",service_name="m_form_service:add_form"} 2.72441375e+08
-form_builder_be_duration_request_endpoint_count{http_method="POST",http_status="200",service_name="m_form_service:add_form"} 20
+form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="200",service_name="m_form_service:add_form",le="+Inf"} 16
+form_builder_be_duration_request_endpoint_sum{http_method="POST",http_status="200",service_name="m_form_service:add_form"} 2.00904127e+08
+form_builder_be_duration_request_endpoint_count{http_method="POST",http_status="200",service_name="m_form_service:add_form"} 16
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="400",service_name="m_form_service:add_form",le="0.1"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="400",service_name="m_form_service:add_form",le="0.15"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="400",service_name="m_form_service:add_form",le="0.2"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="400",service_name="m_form_service:add_form",le="0.25"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="400",service_name="m_form_service:add_form",le="0.3"} 0
-form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="400",service_name="m_form_service:add_form",le="+Inf"} 14
-form_builder_be_duration_request_endpoint_sum{http_method="POST",http_status="400",service_name="m_form_service:add_form"} 2.437624e+06
-form_builder_be_duration_request_endpoint_count{http_method="POST",http_status="400",service_name="m_form_service:add_form"} 14
+form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="400",service_name="m_form_service:add_form",le="+Inf"} 33
+form_builder_be_duration_request_endpoint_sum{http_method="POST",http_status="400",service_name="m_form_service:add_form"} 5.450748e+06
+form_builder_be_duration_request_endpoint_count{http_method="POST",http_status="400",service_name="m_form_service:add_form"} 33
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="404",service_name="m_form_service:add_form",le="0.1"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="404",service_name="m_form_service:add_form",le="0.15"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="404",service_name="m_form_service:add_form",le="0.2"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="404",service_name="m_form_service:add_form",le="0.25"} 0
 form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="404",service_name="m_form_service:add_form",le="0.3"} 0
-form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="404",service_name="m_form_service:add_form",le="+Inf"} 7
-form_builder_be_duration_request_endpoint_sum{http_method="POST",http_status="404",service_name="m_form_service:add_form"} 1.136209e+06
-form_builder_be_duration_request_endpoint_count{http_method="POST",http_status="404",service_name="m_form_service:add_form"} 7
+form_builder_be_duration_request_endpoint_bucket{http_method="POST",http_status="404",service_name="m_form_service:add_form",le="+Inf"} 11
+form_builder_be_duration_request_endpoint_sum{http_method="POST",http_status="404",service_name="m_form_service:add_form"} 1.582292e+06
+form_builder_be_duration_request_endpoint_count{http_method="POST",http_status="404",service_name="m_form_service:add_form"} 11
 # HELP form_builder_be_total_request_endpoint It's show total request for each endpoint
 # TYPE form_builder_be_total_request_endpoint counter
-form_builder_be_total_request_endpoint{http_method="POST",http_status="200",service_name="m_form_service:add_form"} 20
-form_builder_be_total_request_endpoint{http_method="POST",http_status="400",service_name="m_form_service:add_form"} 14
-form_builder_be_total_request_endpoint{http_method="POST",http_status="404",service_name="m_form_service:add_form"} 7
+form_builder_be_total_request_endpoint{http_method="GET",http_status="200",service_name="m_form_service:get_form_by_id"} 13
+form_builder_be_total_request_endpoint{http_method="GET",http_status="404",service_name="m_form_service:get_form_by_id"} 10
+form_builder_be_total_request_endpoint{http_method="POST",http_status="200",service_name="m_form_service:add_form"} 16
+form_builder_be_total_request_endpoint{http_method="POST",http_status="400",service_name="m_form_service:add_form"} 33
+form_builder_be_total_request_endpoint{http_method="POST",http_status="404",service_name="m_form_service:add_form"} 11
 ```
 

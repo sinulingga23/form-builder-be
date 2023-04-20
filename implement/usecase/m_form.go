@@ -483,8 +483,18 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		Message:    "Success to get the form.",
 	}
 
+	serviceName := "m_form_service:get_form_by_id"
+	now := time.Now()
+	httpMethod := http.MethodGet
+
 	cacheResponse, errGetValue := cache.GetValue(ctx, id)
 	if errGetValue == nil {
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusOK), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
 		return cacheResponse.(payload.Response)
 	}
 	log.Printf("errGetValue: %v", errGetValue)
@@ -492,6 +502,14 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	if strings.Trim(id, " ") == "" {
 		response.StatusCode = http.StatusBadRequest
 		response.Message = define.ErrIdEmpty.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusBadRequest), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
+
 		return response
 	}
 
@@ -499,6 +517,14 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	if errPase != nil {
 		response.StatusCode = http.StatusNotFound
 		response.Message = define.ErrMFormNotFound.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusNotFound), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
+
 		return response
 	}
 
@@ -508,11 +534,25 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		if errors.Is(errFindOneMForm, sql.ErrNoRows) {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMFormNotFound.Error()
+
+			go func() {
+				errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusNotFound), &now)
+				if errCaptureMetrics != nil {
+					log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+				}
+			}()
 			return response
 		}
 
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusInternalServerError), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
 		return response
 	}
 
@@ -522,11 +562,26 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		if errors.Is(errFindOneMPartner, sql.ErrNoRows) {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMPartnerNotFound.Error()
+
+			go func() {
+				errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusNotFound), &now)
+				if errCaptureMetrics != nil {
+					log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+				}
+			}()
 			return response
 		}
 
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrInternalServerError.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusInternalServerError), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
+
 		return response
 	}
 
@@ -536,17 +591,38 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		if errors.Is(errFindListFormFieldByMFormId, sql.ErrNoRows) {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMFormFieldNotFound.Error()
+
+			go func() {
+				errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusNotFound), &now)
+				if errCaptureMetrics != nil {
+					log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+				}
+			}()
 			return response
 		}
 
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusInternalServerError), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
 		return response
 	}
 
 	if len(listMFormField) == 0 {
 		response.StatusCode = http.StatusNotFound
 		response.Message = define.ErrMFormFieldNotFound.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusNotFound), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
 		return response
 	}
 
@@ -563,11 +639,25 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		if errors.Is(errFindListMFieldTypeByIds, sql.ErrNoRows) {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMFieldTypeNotFound.Error()
+
+			go func() {
+				errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusNotFound), &now)
+				if errCaptureMetrics != nil {
+					log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+				}
+			}()
 			return response
 		}
 
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusInternalServerError), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
 		return response
 	}
 
@@ -575,6 +665,13 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		log.Printf("listMFieldType: %v", listMFieldType)
 		response.StatusCode = http.StatusNotFound
 		response.Message = define.ErrMFieldTypeNotFound.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusNotFound), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
 		return response
 	}
 
@@ -588,6 +685,13 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	if errFindListMFormChildsByMFormFieldById != nil {
 		response.StatusCode = http.StatusInternalServerError
 		response.Message = define.ErrQueryData.Error()
+
+		go func() {
+			errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusInternalServerError), &now)
+			if errCaptureMetrics != nil {
+				log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+			}
+		}()
 		return response
 	}
 
@@ -622,6 +726,13 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 		if !okMFieldTypeName {
 			response.StatusCode = http.StatusNotFound
 			response.Message = define.ErrMFieldTypeNotFound.Error()
+
+			go func() {
+				errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusNotFound), &now)
+				if errCaptureMetrics != nil {
+					log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
+				}
+			}()
 			return response
 		}
 		mFormFieldResponse.MFieldTypeName = mFieldTypeName
@@ -656,6 +767,11 @@ func (usecase *mFormUsecase) GetFormById(ctx context.Context, id string) payload
 	go func() {
 		if errSetValue := cache.SetValue(ctx, id, response); errSetValue != nil {
 			log.Printf("errSetValue: %v", errSetValue)
+		}
+
+		errCaptureMetrics := usecase.metric.CaptureMetrics(serviceName, httpMethod, strconv.Itoa(http.StatusOK), &now)
+		if errCaptureMetrics != nil {
+			log.Printf("errCaptureMetrics: %v", errCaptureMetrics)
 		}
 	}()
 	return response
