@@ -1,6 +1,7 @@
 package monitoring
 
 import (
+	"errors"
 	"log"
 	"time"
 
@@ -19,7 +20,6 @@ const (
 type Metric struct {
 	TotalRequestEndpoint    *prometheus.CounterVec
 	DurationRequestEndpoint *prometheus.HistogramVec
-	Now                     time.Time
 }
 
 func NewMetric(registry prometheus.Registerer) *Metric {
@@ -45,10 +45,12 @@ func NewMetric(registry prometheus.Registerer) *Metric {
 /*
 Capture all metrics of Metric object
 */
-func (m *Metric) CaptureMetrics(serviceName string, httpMethod string, httpStatus string, onlyMetrics ...MetricType) {
-	if m.Now == (time.Time{}) {
-		m.Now = time.Now()
-	}
+func (m *Metric) CaptureMetrics(
+	serviceName string,
+	httpMethod string,
+	httpStatus string,
+	now *time.Time,
+	onlyMetrics ...MetricType) error {
 
 	// only selected metrics will be captured
 	if len(onlyMetrics) > 0 {
@@ -58,18 +60,24 @@ func (m *Metric) CaptureMetrics(serviceName string, httpMethod string, httpStatu
 				m.TotalRequestEndpoint.WithLabelValues(serviceName, httpMethod, httpStatus).Inc()
 				break
 			case MetricDurationRequestEndpoint:
-				m.DurationRequestEndpoint.WithLabelValues(serviceName, httpMethod, httpStatus).Observe(float64(time.Since(m.Now).Nanoseconds()))
+				if now == nil || *now == (time.Time{}) {
+					return errors.New("Error: 'now' can't empty for MetricDurationRequestEndpoint")
+				}
+				m.DurationRequestEndpoint.WithLabelValues(serviceName, httpMethod, httpStatus).Observe(float64(time.Since(*now).Nanoseconds()))
 				break
 			default:
 				log.Printf("Error: Unknown MetricType.")
 				break
 			}
 		}
-		return
+		return nil
 	}
 
-	if len(onlyMetrics) == 0 {
-		m.TotalRequestEndpoint.WithLabelValues(serviceName, httpMethod, httpStatus).Inc()
-		m.DurationRequestEndpoint.WithLabelValues(serviceName, httpMethod, httpStatus).Observe(float64(time.Since(m.Now).Nanoseconds()))
+	if now == nil || *now == (time.Time{}) {
+		return errors.New("Error: 'now' can't empty for MetricDurationRequestEndpoint")
 	}
+
+	m.TotalRequestEndpoint.WithLabelValues(serviceName, httpMethod, httpStatus).Inc()
+	m.DurationRequestEndpoint.WithLabelValues(serviceName, httpMethod, httpStatus).Observe(float64(time.Since(*now).Nanoseconds()))
+	return nil
 }
